@@ -1,0 +1,108 @@
+#!/usr/bin/env swift
+
+import Foundation
+
+guard CommandLine.arguments.count > 1 else {
+    print("Usage: ./MakeDay.swift <day_number>")
+    exit(1)
+}
+
+let dayNumberString = CommandLine.arguments[1]
+guard let dayNumber = Int(dayNumberString) else {
+    print("Invalid day number: \(dayNumberString)")
+    exit(1)
+}
+
+let dayString = String(format: "%02d", dayNumber)
+let className = "Day\(dayString)"
+let templateName = "Day00"
+
+let fileManager = FileManager.default
+let currentDirectory = fileManager.currentDirectoryPath
+
+// Paths
+let sourcesURL = URL(fileURLWithPath: currentDirectory).appendingPathComponent("Sources")
+let testsURL = URL(fileURLWithPath: currentDirectory).appendingPathComponent("Tests")
+let dataURL = sourcesURL.appendingPathComponent("Data")
+
+let templateSourceURL = sourcesURL.appendingPathComponent("\(templateName).swift")
+let templateTestURL = testsURL.appendingPathComponent("\(templateName).swift")
+
+let newSourceURL = sourcesURL.appendingPathComponent("\(className).swift")
+let newTestURL = testsURL.appendingPathComponent("\(className).swift")
+let newDataURL = dataURL.appendingPathComponent("\(className).txt")
+
+// 1. Create Source File
+do {
+    let templateContent = try String(contentsOf: templateSourceURL, encoding: .utf8)
+    let newContent = templateContent.replacingOccurrences(of: templateName, with: className)
+    if !fileManager.fileExists(atPath: newSourceURL.path) {
+        try newContent.write(to: newSourceURL, atomically: true, encoding: .utf8)
+        print("Created \(newSourceURL.lastPathComponent)")
+    } else {
+        print("\(newSourceURL.lastPathComponent) already exists. Skipping.")
+    }
+} catch {
+    print("Error creating source file: \(error)")
+    exit(1)
+}
+
+// 2. Create Test File
+do {
+    let templateContent = try String(contentsOf: templateTestURL, encoding: .utf8)
+    let newContent = templateContent.replacingOccurrences(of: templateName, with: className)
+    if !fileManager.fileExists(atPath: newTestURL.path) {
+        try newContent.write(to: newTestURL, atomically: true, encoding: .utf8)
+        print("Created \(newTestURL.lastPathComponent)")
+    } else {
+        print("\(newTestURL.lastPathComponent) already exists. Skipping.")
+    }
+} catch {
+    print("Error creating test file: \(error)")
+    exit(1)
+}
+
+// 3. Create Data File
+if !fileManager.fileExists(atPath: newDataURL.path) {
+    fileManager.createFile(atPath: newDataURL.path, contents: nil, attributes: nil)
+    print("Created \(newDataURL.lastPathComponent)")
+} else {
+    print("\(newDataURL.lastPathComponent) already exists. Skipping.")
+}
+
+// 4. Update AdventOfCode.swift
+let mainFileURL = sourcesURL.appendingPathComponent("AdventOfCode.swift")
+do {
+    var mainContent = try String(contentsOf: mainFileURL, encoding: .utf8)
+    
+    // Check if already registered
+    if !mainContent.contains("\(className)()") {
+        // Find the array definition
+        // We look for the last element in the array to append after it, or the closing bracket
+        // A simple regex or string search might suffice given the structure
+        
+        if let range = mainContent.range(of: "let allChallenges: [any AdventDay] = [") {
+            let arrayContentStartIndex = range.upperBound
+            if let arrayEndRange = mainContent.range(of: "]", range: arrayContentStartIndex..<mainContent.endIndex) {
+                _ = mainContent[arrayContentStartIndex..<arrayEndRange.lowerBound]
+                
+                // We want to insert "  DayXX()," before the closing bracket
+                // But we should respect the existing formatting.
+                // Let's just insert it before the closing bracket.
+                
+                let insertion = "  \(className)(),\n"
+                mainContent.insert(contentsOf: insertion, at: arrayEndRange.lowerBound)
+                
+                try mainContent.write(to: mainFileURL, atomically: true, encoding: .utf8)
+                print("Registered \(className) in AdventOfCode.swift")
+            }
+        }
+    } else {
+        print("\(className) already registered in AdventOfCode.swift. Skipping.")
+    }
+} catch {
+    print("Error updating AdventOfCode.swift: \(error)")
+    exit(1)
+}
+
+print("Done! Ready to start coding for \(className).")
