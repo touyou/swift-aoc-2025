@@ -3,7 +3,8 @@
 import Foundation
 
 protocol AdventDay: Sendable {
-  associatedtype Answer = Int
+  associatedtype Answer1 = Int
+  associatedtype Answer2 = Int
 
   /// The day of the Advent of Code challenge.
   ///
@@ -15,10 +16,10 @@ protocol AdventDay: Sendable {
   init(data: String)
 
   /// Computes and returns the answer for part one.
-  func part1() async throws -> Answer
+  func part1() async throws -> Answer1
 
   /// Computes and returns the answer for part two.
-  func part2() async throws -> Answer
+  func part2() async throws -> Answer2
 }
 
 struct PartUnimplemented: Error {
@@ -49,7 +50,7 @@ extension AdventDay {
 
   // Default implementation of `part2`, so there aren't interruptions before
   // working on `part1()`.
-  func part2() throws -> Answer {
+  func part2() throws -> Answer2 {
     throw PartUnimplemented(day: day, part: 2)
   }
 

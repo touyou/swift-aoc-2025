@@ -6,6 +6,7 @@ let allChallenges: [any AdventDay] = [
   Day01(),
   Day02(),
   Day03(),
+  Day04(),
 ]
 
 @main
@@ -39,7 +40,13 @@ struct AdventOfCode: AsyncParsableCommand {
     allChallenges.max(by: { $0.day < $1.day })!
   }
 
-  func run<T>(part: () async throws -> T, named: String) async -> Duration {
+  @discardableResult
+  func run<T>(part: () async throws -> T, named: String) async -> (Duration, Bool) {
+    if T.self == Any.self {
+      print("\(named): Unimplemented")
+      return (.zero, false)
+    }
+
     var result: Result<T, Error>?
     let timing = await ContinuousClock().measure {
       do {
@@ -51,12 +58,14 @@ struct AdventOfCode: AsyncParsableCommand {
     switch result! {
     case .success(let success):
       print("\(named): \(success)")
+      return (timing, true)
     case .failure(let failure as PartUnimplemented):
       print("Day \(failure.day) part \(failure.part) unimplemented")
+      return (timing, false)
     case .failure(let failure):
       print("\(named): Failed with error: \(failure)")
+      return (timing, false)
     }
-    return timing
   }
 
   func run() async throws {
@@ -68,17 +77,26 @@ struct AdventOfCode: AsyncParsableCommand {
       }
 
     for challenge in challenges {
-      print("Executing Advent of Code challenge \(challenge.day)...")
+      await runChallenge(challenge)
+    }
+  }
 
-      let timing1 = await run(part: challenge.part1, named: "Part 1")
-      let timing2 = await run(part: challenge.part2, named: "Part 2")
+  func runChallenge(_ challenge: some AdventDay) async {
+    print("Executing Advent of Code challenge \(challenge.day)...")
 
-      if benchmark {
-        print("Part 1 took \(timing1), part 2 took \(timing2).")
-        #if DEBUG
-          print("Looks like you're benchmarking debug code. Try swift run -c release")
-        #endif
-      }
+    let (timing1, part1Implemented) = await run(part: challenge.part1, named: "Part 1")
+    var timing2: Duration = .zero
+
+    if part1Implemented {
+      let (t2, _) = await run(part: challenge.part2, named: "Part 2")
+      timing2 = t2
+    }
+
+    if benchmark {
+      print("Part 1 took \(timing1), part 2 took \(timing2).")
+      #if DEBUG
+        print("Looks like you're benchmarking debug code. Try swift run -c release")
+      #endif
     }
   }
 }
