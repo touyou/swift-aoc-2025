@@ -8,9 +8,9 @@ struct Day06Tests {
   // Smoke test data provided in the challenge question
   let testData = """
     123 328  51 64 
- 45 64  387 23 
-  6 98  215 314
-*   +   *   +  
+    45 64  387 23 
+    6 98  215 314
+    *   +   *   +  
     """
 
   @Test func testPart1() async throws {
